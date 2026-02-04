@@ -1,0 +1,345 @@
+{
+  "components": {
+    "schemas": {
+      "elephant.genai.GenerateRequest": {
+        "description": "Request to generate text from a prompt",
+        "properties": {
+          "model_id": {
+            "description": "Optional: override model (defaults to prompt's configured model)",
+            "type": "string"
+          },
+          "prompt_uuid": {
+            "description": "UUID of core/prompt document in repository",
+            "type": "string"
+          },
+          "variables": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Template variables to substitute in prompt Example: {\"paragraph\": \"The text to analyze...\"}",
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.genai.GenerateResponse": {
+        "description": "Response containing generated text",
+        "properties": {
+          "generation_id": {
+            "description": "Unique ID for this generation",
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/elephant.genai.GenerationMetadata"
+          },
+          "text": {
+            "description": "Generated text from AI",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.genai.GenerationMetadata": {
+        "description": "Metadata about AI generation",
+        "properties": {
+          "completion_tokens": {
+            "description": "Number of tokens in completion",
+            "type": "integer"
+          },
+          "cost_usd": {
+            "description": "Estimated cost in USD",
+            "type": "number"
+          },
+          "duration_ms": {
+            "description": "Duration in milliseconds",
+            "type": "integer"
+          },
+          "model": {
+            "description": "Model used for generation",
+            "type": "string"
+          },
+          "prompt_tokens": {
+            "description": "Number of tokens in prompt",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.genai.GenerationRecord": {
+        "description": "Historical generation record",
+        "properties": {
+          "completed_at": {
+            "description": "When generation completed",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "When generation was requested",
+            "type": "string"
+          },
+          "created_by": {
+            "description": "Who requested generation",
+            "type": "string"
+          },
+          "document_uuid": {
+            "description": "Document UUID (prompt)",
+            "type": "string"
+          },
+          "error_message": {
+            "description": "Error message if failed",
+            "type": "string"
+          },
+          "id": {
+            "description": "Generation ID",
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/elephant.genai.GenerationMetadata"
+          },
+          "model": {
+            "description": "Model used",
+            "type": "string"
+          },
+          "prompt_preview": {
+            "description": "Prompt text (truncated)",
+            "type": "string"
+          },
+          "status": {
+            "description": "Status: \"completed\", \"failed\", \"pending\"",
+            "type": "string"
+          },
+          "text_preview": {
+            "description": "Generated text (truncated)",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.genai.GetHistoryRequest": {
+        "description": "Request to get generation history",
+        "properties": {
+          "document_uuid": {
+            "description": "Optional: filter by document UUID",
+            "type": "string"
+          },
+          "limit": {
+            "description": "Optional: limit number of results",
+            "type": "integer"
+          },
+          "offset": {
+            "description": "Optional: offset for pagination",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.genai.GetHistoryResponse": {
+        "description": "Response with generation history",
+        "properties": {
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/elephant.genai.GenerationRecord"
+            },
+            "type": "array"
+          },
+          "total": {
+            "description": "Total count (for pagination)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.genai.ListModelsRequest": {
+        "description": "Request to list available models",
+        "type": "object"
+      },
+      "elephant.genai.ListModelsResponse": {
+        "description": "Response with list of available models",
+        "properties": {
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/elephant.genai.Model"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.genai.Model": {
+        "description": "AI model information",
+        "properties": {
+          "display_name": {
+            "description": "Display name for UI",
+            "type": "string"
+          },
+          "enabled": {
+            "description": "Whether model is currently enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "Model identifier (e.g., \"gpt-4\", \"claude-3-opus\")",
+            "type": "string"
+          },
+          "name": {
+            "description": "Model name",
+            "type": "string"
+          },
+          "provider": {
+            "description": "Provider name (e.g., \"openai\", \"anthropic\")",
+            "type": "string"
+          },
+          "streaming_supported": {
+            "description": "Whether model supports streaming",
+            "type": "boolean"
+          },
+          "vision_supported": {
+            "description": "Whether model supports vision/images",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "title": "genai API",
+    "version": "v0.19.4-1-geb069d7"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/twirp/elephant.genai.GenAI/Generate": {
+      "post": {
+        "description": "Generate text using a prompt document",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/elephant.genai.GenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/elephant.genai.GenerateResponse"
+                }
+              }
+            },
+            "description": "Method response"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Generate",
+        "tags": [
+          "GenAI"
+        ]
+      }
+    },
+    "/twirp/elephant.genai.GenAI/GetHistory": {
+      "post": {
+        "description": "Get generation history for a document",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/elephant.genai.GetHistoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/elephant.genai.GetHistoryResponse"
+                }
+              }
+            },
+            "description": "Method response"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "GetHistory",
+        "tags": [
+          "GenAI"
+        ]
+      }
+    },
+    "/twirp/elephant.genai.GenAI/ListModels": {
+      "post": {
+        "description": "List available AI models",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/elephant.genai.ListModelsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/elephant.genai.ListModelsResponse"
+                }
+              }
+            },
+            "description": "Method response"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "ListModels",
+        "tags": [
+          "GenAI"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://genai.api.tt.se"
+    },
+    {
+      "url": "https://genai.api.stage.tt.se"
+    }
+  ],
+  "tags": [
+    {
+      "description": "GenAI service provides AI-powered text generation capabilities",
+      "name": "GenAI"
+    }
+  ]
+}
