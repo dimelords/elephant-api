@@ -17,6 +17,27 @@
         },
         "type": "object"
       },
+      "elephant.repository.AcquireLock": {
+        "description": "AcquireLock describes a lock to acquire as part of a GetDocument request. It mirrors LockRequest, but omits the redundant document UUID.",
+        "properties": {
+          "app": {
+            "description": "Name of the locking application. Optional.",
+            "type": "string"
+          },
+          "comment": {
+            "description": "Free-form comment string. Optional.",
+            "type": "string"
+          },
+          "exclusivity": {
+            "$ref": "#/components/schemas/elephant.repository.LockExclusivity"
+          },
+          "ttl": {
+            "description": "Lock TTL in milliseconds.",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "elephant.repository.AttachmentDetails": {
         "properties": {
           "content_type": {
@@ -55,6 +76,30 @@
           "version": {
             "description": "Version is the current version of the attachment.",
             "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.repository.BulkGetDeliverableInfoRequest": {
+        "properties": {
+          "uuids": {
+            "description": "UUIDs of the deliverables to look up.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.repository.BulkGetDeliverableInfoResponse": {
+        "properties": {
+          "items": {
+            "description": "Items contains one entry per deliverable that has planning information. Deliverables without planning information are omitted.",
+            "items": {
+              "$ref": "#/components/schemas/elephant.repository.DeliverableInfo"
+            },
+            "type": "array"
           }
         },
         "type": "object"
@@ -320,6 +365,27 @@
         "type": "object"
       },
       "elephant.repository.DeleteWorkflowResponse": {
+        "type": "object"
+      },
+      "elephant.repository.DeliverableInfo": {
+        "properties": {
+          "assignment_uuid": {
+            "description": "UUID of the related assignment.",
+            "type": "string"
+          },
+          "event_uuid": {
+            "description": "UUID of the related event.",
+            "type": "string"
+          },
+          "planning_uuid": {
+            "description": "UUID of the related planning item.",
+            "type": "string"
+          },
+          "uuid": {
+            "description": "UUID of the deliverable document.",
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "elephant.repository.Deprecation": {
@@ -629,6 +695,10 @@
             "description": "OldLanguage of the document if the document changed language.",
             "type": "string"
           },
+          "schema_generation": {
+            "description": "SchemaGeneration is the ID of the schema generation that was used to validate the document.",
+            "type": "integer"
+          },
           "status": {
             "description": "Status that was affected, if it was a \"status\" event.",
             "type": "string"
@@ -701,6 +771,22 @@
           "evict_count": {
             "description": "EvictCount is the number of versions that were evicted.",
             "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.repository.Exemplar": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/newsdoc.Document"
+          },
+          "name": {
+            "description": "Name of the exemplar.",
+            "type": "string"
+          },
+          "version_hash": {
+            "description": "VersionHash is the version hash of the exemplar document.",
+            "type": "string"
           }
         },
         "type": "object"
@@ -800,6 +886,10 @@
       },
       "elephant.repository.GetAllActiveSchemasResponse": {
         "properties": {
+          "generation_id": {
+            "description": "GenerationID is the ID of the currently active schema generation.",
+            "type": "integer"
+          },
           "removed": {
             "description": "Removed schemas.",
             "items": {
@@ -935,8 +1025,7 @@
       "elephant.repository.GetDocumentRequest": {
         "properties": {
           "lock": {
-            "description": "Lock will lock the document for updates. This only affects the creation of new versions of the document, statuses can still be updated.",
-            "type": "boolean"
+            "$ref": "#/components/schemas/elephant.repository.AcquireLock"
           },
           "meta_document": {
             "$ref": "#/components/schemas/elephant.repository.GetMetaDoc"
@@ -975,6 +1064,9 @@
           "is_meta_document": {
             "description": "IsMetaDocument is true if the document is a meta document.",
             "type": "boolean"
+          },
+          "lock": {
+            "$ref": "#/components/schemas/elephant.repository.LockGrant"
           },
           "main_document": {
             "description": "MainDocument is the UUID of the main document if this is a meta document.",
@@ -1041,6 +1133,34 @@
           "items": {
             "items": {
               "$ref": "#/components/schemas/elephant.repository.EventlogItem"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.repository.GetExemplarsRequest": {
+        "properties": {
+          "generation_id": {
+            "description": "GenerationID is the ID of the schema generation to get exemplars for.",
+            "type": "integer"
+          },
+          "known": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Known exemplar version hashes that the client already has, keyed by exemplar name. Exemplars with matching version hashes will not be included in the response.",
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.repository.GetExemplarsResponse": {
+        "properties": {
+          "exemplars": {
+            "description": "Exemplars are the exemplar documents for the schema generation.",
+            "items": {
+              "$ref": "#/components/schemas/elephant.repository.Exemplar"
             },
             "type": "array"
           }
@@ -1501,6 +1621,10 @@
       },
       "elephant.repository.ListActiveSchemasResponse": {
         "properties": {
+          "generation_id": {
+            "description": "GenerationID is the ID of the currently active schema generation.",
+            "type": "integer"
+          },
           "schemas": {
             "description": "Schemas without the spec populated",
             "items": {
@@ -1544,6 +1668,26 @@
         },
         "type": "object"
       },
+      "elephant.repository.ListSchemaGenerationsRequest": {
+        "properties": {
+          "before": {
+            "description": "Before is used to paginate backwards based on the generation ID.",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.repository.ListSchemaGenerationsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/elephant.repository.SchemaGeneration"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
       "elephant.repository.Lock": {
         "properties": {
           "app": {
@@ -1557,6 +1701,9 @@
           "created": {
             "description": "Created timestamp is the RFC3339 timestamp for when the lock was created.",
             "type": "string"
+          },
+          "exclusivity": {
+            "$ref": "#/components/schemas/elephant.repository.LockExclusivity"
           },
           "expires": {
             "description": "Expires timestamp is the RFC3339 timestamp for when the lock will expire.",
@@ -1573,6 +1720,30 @@
         },
         "type": "object"
       },
+      "elephant.repository.LockExclusivity": {
+        "description": "LockExclusivity controls which operations a document lock blocks for callers that don't hold the lock token. Document updates (new versions, deletes) are always blocked by a lock; the exclusivity level can extend the lock to also cover status and ACL updates.",
+        "enum": [
+          "LOCK_DOCUMENT",
+          "LOCK_STATUS",
+          "LOCK_ACL",
+          "LOCK_EXCLUSIVE"
+        ],
+        "type": "string"
+      },
+      "elephant.repository.LockGrant": {
+        "description": "LockGrant is the lock returned when a GetDocument request successfully acquired a lock via its lock field. It mirrors LockResponse.",
+        "properties": {
+          "expires": {
+            "description": "Expires is the RFC3339 timestamp when the lock will expire.",
+            "type": "string"
+          },
+          "token": {
+            "description": "Generated lock token in UUID format.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "elephant.repository.LockRequest": {
         "properties": {
           "app": {
@@ -1582,6 +1753,9 @@
           "comment": {
             "description": "Free-form comment string. Optional.",
             "type": "string"
+          },
+          "exclusivity": {
+            "$ref": "#/components/schemas/elephant.repository.LockExclusivity"
           },
           "ttl": {
             "description": "Lock TTL in milliseconds",
@@ -1666,6 +1840,29 @@
         },
         "type": "object"
       },
+      "elephant.repository.PruneRequest": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/newsdoc.Document"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.repository.PruneResponse": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/newsdoc.Document"
+          },
+          "errors": {
+            "description": "Errors are validation issues that could not be resolved by pruning.",
+            "items": {
+              "$ref": "#/components/schemas/elephant.repository.ValidationResult"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
       "elephant.repository.PurgeRequest": {
         "properties": {
           "delete_record_id": {
@@ -1680,6 +1877,37 @@
         "type": "object"
       },
       "elephant.repository.PurgeResponse": {
+        "type": "object"
+      },
+      "elephant.repository.RegisterGenerationRequest": {
+        "properties": {
+          "activation": {
+            "$ref": "#/components/schemas/elephant.repository.SchemaActivation"
+          },
+          "exemplars": {
+            "description": "Examplars are documents that serve as examples of what can be expressed with the schemas. If any of the exemplars are invalid the registration request will be rejected.",
+            "items": {
+              "$ref": "#/components/schemas/newsdoc.Document"
+            },
+            "type": "array"
+          },
+          "schemas": {
+            "description": "Schemas to register.",
+            "items": {
+              "$ref": "#/components/schemas/elephant.repository.Schema"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.repository.RegisterGenerationResponse": {
+        "properties": {
+          "generation_id": {
+            "description": "GenerationID is the ID of the created schema generation.",
+            "type": "integer"
+          }
+        },
         "type": "object"
       },
       "elephant.repository.RegisterMetaTypeRequest": {
@@ -1746,29 +1974,6 @@
         "type": "object"
       },
       "elephant.repository.RegisterMetricResponse": {
-        "type": "object"
-      },
-      "elephant.repository.RegisterSchemaRequest": {
-        "properties": {
-          "activate": {
-            "description": "Activate the registered schema immediately.",
-            "type": "boolean"
-          },
-          "schema": {
-            "$ref": "#/components/schemas/elephant.repository.Schema"
-          },
-          "schema_sha256": {
-            "description": "SchemaSHA256 is a SHA256 checksum to validate the response body from the schema URL against.",
-            "type": "string"
-          },
-          "schema_url": {
-            "description": "SchemaURL is an HTTP(S) url to the schema to load, can be passed instead of an inline schema spec.",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "elephant.repository.RegisterSchemaResponse": {
         "type": "object"
       },
       "elephant.repository.RestoreRequest": {
@@ -1845,24 +2050,70 @@
         },
         "type": "object"
       },
-      "elephant.repository.SetActiveSchemaRequest": {
+      "elephant.repository.SchemaActivation": {
+        "enum": [
+          "ACTIVATION_UNKNOWN",
+          "ACTIVATION_ACTIVE",
+          "ACTIVATION_PENDING",
+          "ACTIVATION_DEACTIVATED"
+        ],
+        "type": "string"
+      },
+      "elephant.repository.SchemaGeneration": {
         "properties": {
-          "deactivate": {
-            "description": "Deactivate is used to disable a schema, activate new schema versions instead if you want to start using a new version.",
-            "type": "boolean"
+          "activated": {
+            "description": "Activated is the time (RFC3339) the schema generation was last activated (if it has been activated).",
+            "type": "string"
           },
+          "created": {
+            "description": "Created is the time (RFC3339) the schema generation was first registered.",
+            "type": "string"
+          },
+          "deactivated": {
+            "description": "Deactivated is the time (RFC3339) the schema generation was last deactivated (if it has been deactivated).",
+            "type": "string"
+          },
+          "id": {
+            "description": "ID of the schema generation.",
+            "type": "integer"
+          },
+          "schemas": {
+            "description": "Schemas are the schemas that are included in the generation.",
+            "items": {
+              "$ref": "#/components/schemas/elephant.repository.SchemaReference"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/elephant.repository.SchemaActivation"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.repository.SchemaReference": {
+        "properties": {
           "name": {
-            "description": "Name is the name of the schema to activate or deactivate, required.",
             "type": "string"
           },
           "version": {
-            "description": "Version of the schema to activate, required when activating a new version.",
             "type": "string"
           }
         },
         "type": "object"
       },
-      "elephant.repository.SetActiveSchemaResponse": {
+      "elephant.repository.SetActiveSchemasRequest": {
+        "properties": {
+          "activation": {
+            "$ref": "#/components/schemas/elephant.repository.SchemaActivation"
+          },
+          "generation_id": {
+            "description": "GenerationID is the ID of the generation to activate.",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "elephant.repository.SetActiveSchemasResponse": {
         "type": "object"
       },
       "elephant.repository.SetWorkflowRequest": {
@@ -2498,11 +2749,18 @@
       "elephant.repositorysocket.GetEventlog": {
         "properties": {
           "after": {
-            "description": "After allows the client to subscribe from after a given event ID. The server only buffers a limited amount of events (defaults to 100) and requesting events from before the range of that buffer will result in a resume out of bounds \"eventlog_resume_oob\" error.",
+            "description": "After allows the client to subscribe from after a given event ID. The server only buffers a limited amount of events (defaults to 500) and requesting events from before the range of that buffer will result in a resume out of bounds \"eventlog_resume_oob\" error.",
             "type": "integer"
           },
           "document_types": {
             "description": "DocumentTypes for which the client wants events for. If no types are provided all types will be included.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "events": {
+            "description": "Events are the event types the client wants events for, one of: \"document\", \"status\", \"acl\", \"delete_document\", \"restore_finished\", \"workflow\". If no event types are provided all event types will be included.",
             "items": {
               "type": "string"
             },
@@ -2745,7 +3003,7 @@
   },
   "info": {
     "title": "repositorysocket API",
-    "version": "v0.21.3"
+    "version": "v0.24.1"
   },
   "openapi": "3.0.0",
   "paths": {
@@ -2782,6 +3040,44 @@
           }
         ],
         "summary": "BulkGet",
+        "tags": [
+          "Documents"
+        ]
+      }
+    },
+    "/twirp/elephant.repository.Documents/BulkGetDeliverableInfo": {
+      "post": {
+        "description": "BulkGetDeliverableInfo returns deliverable information for multiple documents in a single request.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/elephant.repository.BulkGetDeliverableInfoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/elephant.repository.BulkGetDeliverableInfoResponse"
+                }
+              }
+            },
+            "description": "Method response"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "BulkGetDeliverableInfo",
         "tags": [
           "Documents"
         ]
@@ -3587,7 +3883,7 @@
     },
     "/twirp/elephant.repository.Documents/Lock": {
       "post": {
-        "description": "Lock attempts to acquire a write lock on a document.",
+        "description": "Lock attempts to acquire a write lock on a document. Fails with FailedPrecondition when the document is already locked; the failure carries error metadata keys \"lock_holder_sub\", \"lock_app\", \"lock_comment\" and \"lock_expires\" so callers can distinguish \"held by me\" (look up the token in own state) from \"held by someone else\" (surface to the user).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3618,6 +3914,44 @@
           }
         ],
         "summary": "Lock",
+        "tags": [
+          "Documents"
+        ]
+      }
+    },
+    "/twirp/elephant.repository.Documents/Prune": {
+      "post": {
+        "description": "Prune will attempt to remove invalid parts of a document until what remains is valid. If that's not possible it will return the same kind of error information as a Validate call would return, highlighting the remaining issues.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/elephant.repository.PruneRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/elephant.repository.PruneResponse"
+                }
+              }
+            },
+            "description": "Method response"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Prune",
         "tags": [
           "Documents"
         ]
@@ -4081,7 +4415,7 @@
     },
     "/twirp/elephant.repository.Schemas/GetAllActive": {
       "post": {
-        "description": "GetAllActiveSchemas returns the currently active schemas.",
+        "description": "GetAllActiveSchemas returns the currently active validation schemas.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4188,6 +4522,44 @@
           }
         ],
         "summary": "GetDocumentTypes",
+        "tags": [
+          "Schemas"
+        ]
+      }
+    },
+    "/twirp/elephant.repository.Schemas/GetExemplars": {
+      "post": {
+        "description": "GetExemplars returns the exemplar documents for a schema generation. Known exemplar version hashes can be provided to avoid re-transferring unchanged documents.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/elephant.repository.GetExemplarsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/elephant.repository.GetExemplarsResponse"
+                }
+              }
+            },
+            "description": "Method response"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "GetExemplars",
         "tags": [
           "Schemas"
         ]
@@ -4307,14 +4679,14 @@
         ]
       }
     },
-    "/twirp/elephant.repository.Schemas/Register": {
+    "/twirp/elephant.repository.Schemas/ListGenerations": {
       "post": {
-        "description": "Register register a new validation schema version.",
+        "description": "ListGenerations lists the configured schema generations.",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/elephant.repository.RegisterSchemaRequest"
+                "$ref": "#/components/schemas/elephant.repository.ListSchemaGenerationsRequest"
               }
             }
           }
@@ -4324,7 +4696,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/elephant.repository.RegisterSchemaResponse"
+                  "$ref": "#/components/schemas/elephant.repository.ListSchemaGenerationsResponse"
                 }
               }
             },
@@ -4339,7 +4711,45 @@
             "bearer": []
           }
         ],
-        "summary": "Register",
+        "summary": "ListGenerations",
+        "tags": [
+          "Schemas"
+        ]
+      }
+    },
+    "/twirp/elephant.repository.Schemas/RegisterGeneration": {
+      "post": {
+        "description": "RegisterGeneration registers a new schema generation. Registration is idempotent, so calling RegisterGeneration with the same schema versions will yield the same generation ID.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/elephant.repository.RegisterGenerationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/elephant.repository.RegisterGenerationResponse"
+                }
+              }
+            },
+            "description": "Method response"
+          },
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "RegisterGeneration",
         "tags": [
           "Schemas"
         ]
@@ -4423,12 +4833,12 @@
     },
     "/twirp/elephant.repository.Schemas/SetActive": {
       "post": {
-        "description": "SetActive activates schema versions.",
+        "description": "SetActive activates or deactivates a schema generation. Activating a generation always deactivates the currently active schema generation. Deactivation is only relevant in the context of pending schema generations, because deactivating an active schema generation isn't allowed.",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/elephant.repository.SetActiveSchemaRequest"
+                "$ref": "#/components/schemas/elephant.repository.SetActiveSchemasRequest"
               }
             }
           }
@@ -4438,7 +4848,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/elephant.repository.SetActiveSchemaResponse"
+                  "$ref": "#/components/schemas/elephant.repository.SetActiveSchemasResponse"
                 }
               }
             },
